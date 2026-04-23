@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Garden Layout Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{--soil:#8B6914;--soil-l:#c8a96e;--soil-d:#5a4008;--path:#e8dcc8;--path-b:#d4c4a0;--cream:#faf6ee;--ink:#2c1f0e;--ink-m:#5a4020}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Source Serif 4',Georgia,serif;background:var(--cream);color:var(--ink);min-height:100vh;background-image:radial-gradient(circle at 20% 80%,rgba(139,105,20,.06) 0%,transparent 50%),radial-gradient(circle at 80% 20%,rgba(74,124,63,.06) 0%,transparent 50%)}
+header{text-align:center;padding:20px 20px 10px;border-bottom:2px solid var(--soil-l);background:linear-gradient(to bottom,#fff8ea,var(--cream));position:relative}
+header::after{content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:60%;height:3px;background:var(--soil);border-radius:2px}
+h1{font-family:'Playfair Display',serif;font-size:clamp(17px,3.5vw,26px);color:var(--soil-d);font-weight:900}
+.subtitle{color:var(--ink-m);font-size:12px;margin-top:3px;font-style:italic}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:9px 16px;background:white;border-bottom:1px solid var(--path-b);position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.tbtn{font-family:'Source Serif 4',serif;font-size:12px;padding:5px 13px;border:1.5px solid var(--soil-l);border-radius:20px;background:white;color:var(--ink-m);cursor:pointer;transition:all .2s;font-weight:600}
+.tbtn:hover{background:var(--soil);color:white;border-color:var(--soil)}
+.tsep{width:1px;height:18px;background:var(--path-b)}
+.layout{display:grid;grid-template-columns:1fr 224px;gap:16px;padding:16px;max-width:1200px;margin:0 auto}
+@media(max-width:800px){.layout{grid-template-columns:1fr}}
+.garden-wrap{display:flex;flex-direction:column;gap:10px}
+.garden-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.glabel{font-family:'Playfair Display',serif;font-size:14px;color:var(--soil-d);font-weight:700}
+.size-row{display:flex;align-items:center;gap:5px}
+.size-lbl{font-size:11px;color:var(--ink-m);font-weight:600}
+.sz-btn{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--soil-l);background:white;color:var(--soil-d);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;font-family:inherit;font-weight:700}
+.sz-btn:hover{background:var(--soil);color:white;border-color:var(--soil)}
+.sz-val{font-size:13px;font-weight:700;color:var(--soil-d);min-width:26px;text-align:center;font-family:'Playfair Display',serif}
+.sqft{font-size:11px;color:var(--ink-m);font-style:italic}
+.info-bar{background:linear-gradient(to right,#f0e8d4,#faf6ee);border:1px solid var(--path-b);border-radius:4px;padding:5px 12px;font-size:11px;color:var(--ink-m);font-style:italic;text-align:center}
+.grid-outer{overflow:auto}
+.grid-wrap{display:inline-flex;flex-direction:column;gap:0;background:var(--path);border:3px solid var(--soil);border-radius:4px;padding:2px;box-shadow:0 4px 16px rgba(90,64,8,.15);min-width:max-content}
+.grid-row{display:flex;gap:1px;margin-bottom:1px}
+.grid-row:last-child{margin-bottom:0}
+.axis-lbl{display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ink-m);font-weight:600;font-family:'Source Serif 4',serif;flex-shrink:0}
+.col-ax{height:18px;width:42px}.row-ax{width:18px;height:42px}.corner-ax{width:18px;height:18px}
+.cell{width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;border:1px solid rgba(0,0,0,.08);border-radius:3px;transition:transform .12s;user-select:none;flex-shrink:0;position:relative}
+.cell.empty{background:#c8b99a;border-color:#b5a07f}
+.cell:hover{transform:scale(1.1);z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.cell.drag-over{outline:2px dashed var(--soil);outline-offset:-1px}
+.sidebar{display:flex;flex-direction:column;gap:11px}
+.card{background:white;border:1.5px solid var(--path-b);border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.card-title{font-family:'Playfair Display',serif;font-size:12px;font-weight:700;color:var(--soil-d);padding:7px 12px;background:linear-gradient(to right,#f5edd8,#fff8ee);border-bottom:1px solid var(--path-b);letter-spacing:.05em;text-transform:uppercase}
+.palette-list{padding:5px 7px;display:flex;flex-direction:column;gap:1px;max-height:260px;overflow-y:auto}
+.p-item{display:flex;align-items:center;gap:6px;padding:3px 4px;border-radius:5px;cursor:pointer;border:1.5px solid transparent;transition:all .12s;user-select:none}
+.p-item:hover{background:var(--cream);border-color:var(--soil-l)}
+.p-item.selected{background:var(--cream);border-color:var(--soil);box-shadow:0 0 0 1.5px var(--soil-l)}
+.p-item[draggable]{cursor:grab}
+.p-swatch{width:26px;height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.p-name{font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-count{font-size:11px;color:var(--ink-m);font-weight:700;min-width:16px;text-align:right;font-family:'Playfair Display',serif}
+.p-actions{display:flex;gap:2px;opacity:0;transition:opacity .15s}
+.p-item:hover .p-actions{opacity:1}
+.p-ico-btn{font-size:11px;cursor:pointer;padding:1px 3px;border-radius:3px;line-height:1;border:none;background:transparent;color:var(--ink-m)}
+.p-ico-btn:hover{background:var(--path-b)}
+.p-ico-btn.del{color:#c0392b}
+.eraser-wrap{padding:4px 7px 7px}
+.eraser-item{display:flex;align-items:center;gap:6px;padding:3px 4px;border-radius:5px;cursor:pointer;border:1.5px dashed #c0b090;transition:all .12s;background:#faf8f4}
+.eraser-item:hover,.eraser-item.selected{background:#ffe8e8;border-color:#c0392b}
+
+/* Edit/Add form */
+.plant-form{padding:8px;display:flex;flex-direction:column;gap:5px}
+.form-row{display:flex;gap:5px;align-items:center}
+.fi{font-family:'Source Serif 4',serif;font-size:11px;padding:4px 7px;border:1.5px solid var(--soil-l);border-radius:4px;background:white;color:var(--ink);min-width:0}
+.fi:focus{outline:none;border-color:var(--soil)}
+.fi.name-fi{flex:1}
+.fi.abbr-fi{width:46px;text-align:center;font-weight:700}
+.color-pick{width:30px;height:28px;border:1.5px solid var(--soil-l);border-radius:4px;cursor:pointer;padding:1px;background:white;flex-shrink:0}
+.form-btns{display:flex;gap:5px}
+.fbtn{font-family:'Source Serif 4',serif;font-size:11px;padding:4px 10px;border-radius:12px;cursor:pointer;font-weight:600;transition:all .15s;border:1.5px solid}
+.fbtn.ok{background:var(--soil);border-color:var(--soil);color:white}
+.fbtn.ok:hover{background:var(--soil-d)}
+.fbtn.cancel-f{background:white;border-color:var(--path-b);color:var(--ink-m)}
+.fbtn.cancel-f:hover{background:var(--cream)}
+.form-hint{font-size:10px;color:var(--ink-m);font-style:italic}
+
+/* Presets */
+.preset-list{padding:6px 8px;display:flex;flex-direction:column;gap:4px}
+.preset-btn{font-family:'Source Serif 4',serif;font-size:11px;padding:5px 8px;border:1.5px solid var(--soil-l);border-radius:5px;background:white;color:var(--ink-m);cursor:pointer;text-align:left;font-weight:600;transition:all .15s;line-height:1.3}
+.preset-btn:hover{background:var(--soil);color:white;border-color:var(--soil)}
+.preset-sub{font-size:9px;font-style:italic;display:block;margin-top:1px;opacity:.75}
+
+.saves-body{padding:7px;display:flex;flex-direction:column;gap:5px}
+.save-row{display:flex;align-items:center;gap:5px;font-size:11px}
+.save-dot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0}
+.save-dot.on{background:var(--soil-l)}
+.save-lbl{flex:1;color:var(--ink-m);font-weight:600}
+.sv-btn{font-family:'Source Serif 4',serif;font-size:10px;padding:2px 8px;border-radius:10px;border:1.5px solid;cursor:pointer;font-weight:600;transition:all .12s}
+.sv-btn.s{border-color:var(--soil-l);color:var(--soil);background:white}
+.sv-btn.s:hover{background:var(--soil);color:white}
+.sv-btn.l{border-color:#4a7c3f;color:#4a7c3f;background:white}
+.sv-btn.l:hover{background:#4a7c3f;color:white}
+.sv-btn:disabled{opacity:.35;cursor:not-allowed}
+
+.stats-list{padding:5px 10px;display:flex;flex-direction:column;gap:2px}
+.stat-row{display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0;border-bottom:1px solid #f0e8d8}
+.stat-row:last-child{border-bottom:none}
+.stat-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.stat-name{flex:1;color:var(--ink-m);font-weight:600}
+.stat-n{font-weight:700;font-family:'Playfair Display',serif;color:var(--soil-d)}
+.stat-total{font-family:'Playfair Display',serif;font-size:12px;text-align:right;padding:5px 10px;color:var(--soil-d);font-weight:700;border-top:1.5px solid var(--soil-l)}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:999;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal-box{background:white;border-radius:10px;border:1.5px solid var(--path-b);padding:20px 24px;max-width:300px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.15)}
+.modal-box h3{font-family:'Playfair Display',serif;color:var(--soil-d);margin-bottom:8px;font-size:16px}
+.modal-box p{font-size:13px;color:var(--ink-m);margin-bottom:16px;line-height:1.5}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end}
+.mbtn{font-family:'Source Serif 4',serif;font-size:12px;font-weight:600;padding:6px 16px;border-radius:20px;border:1.5px solid;cursor:pointer;transition:all .15s}
+.mbtn.cancel{border-color:var(--path-b);color:var(--ink-m);background:white}
+.mbtn.cancel:hover{background:var(--cream)}
+.mbtn.ok{border-color:var(--soil);background:var(--soil);color:white}
+.mbtn.ok:hover{background:var(--soil-d)}
+
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--soil-d);color:white;font-size:12px;font-family:'Source Serif 4',serif;padding:7px 18px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:transform .25s;pointer-events:none;z-index:1000;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌱 Garden Layout Planner</h1>
+  <div class="subtitle">Click a plant to select · Paint cells · Drag from palette · Right-click to erase</div>
+</header>
+<div class="toolbar">
+  <button class="tbtn" id="btn-reset">↺ Reset</button>
+  <button class="tbtn" id="btn-clear">✕ Clear All</button>
+  <div class="tsep"></div>
+  <span style="font-size:11px;color:var(--ink-m)">Selected: <strong id="sel-name">None</strong></span>
+</div>
+<div class="layout">
+  <div class="garden-wrap">
+    <div class="garden-top">
+      <span class="glabel">Garden Grid</span>
+      <div class="size-row">
+        <span class="size-lbl">Cols</span>
+        <button class="sz-btn" id="col-m">−</button>
+        <span class="sz-val" id="col-v">16</span>
+        <button class="sz-btn" id="col-p">+</button>
+      </div>
+      <div class="size-row">
+        <span class="size-lbl">Rows</span>
+        <button class="sz-btn" id="row-m">−</button>
+        <span class="sz-val" id="row-v">14</span>
+        <button class="sz-btn" id="row-p">+</button>
+      </div>
+      <span class="sqft" id="sqft-lbl">224 sq ft</span>
+    </div>
+    <div class="info-bar">Click a plant in the palette then paint cells · Drag from palette · Right-click any cell to erase · Hover a plant to edit ✎ or remove ✕</div>
+    <div class="grid-outer">
+      <div class="grid-wrap" id="grid-wrap"></div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <!-- Plants -->
+    <div class="card">
+      <div class="card-title">🌿 Plants</div>
+      <div class="palette-list" id="palette-list"></div>
+      <div class="eraser-wrap">
+        <div class="eraser-item" id="eraser-item">
+          <div class="p-swatch" style="background:#f5f0e8;border:1px dashed #c0b090;color:#c0392b">✕</div>
+          <span class="p-name" style="color:#c0392b;font-weight:600">Erase</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add / Edit form -->
+    <div class="card" id="plant-form-card">
+      <div class="card-title" id="form-title">＋ Add Custom Plant</div>
+      <div class="plant-form">
+        <input type="hidden" id="edit-id">
+        <div class="form-row">
+          <input class="fi name-fi" id="fi-name" placeholder="Plant name (e.g. Broccoli)" maxlength="20">
+        </div>
+        <div class="form-row">
+          <input class="fi abbr-fi" id="fi-abbr" placeholder="AB" maxlength="3" title="1–3 letter abbreviation shown on grid">
+          <input type="color" class="color-pick" id="fi-color" value="#2e7d32" title="Pick a color">
+          <div class="form-btns">
+            <button class="fbtn ok" id="form-ok-btn">Add</button>
+            <button class="fbtn cancel-f" id="form-cancel-btn" style="display:none">Cancel</button>
+          </div>
+        </div>
+        <div class="form-hint">Abbrev (1–3 letters) appears on grid cells</div>
+      </div>
+    </div>
+
+    <!-- Presets -->
+    <div class="card">
+      <div class="card-title">📋 Garden Presets</div>
+      <div class="preset-list">
+        <button class="preset-btn" onclick="applyPreset('cottage')">
+          Cottage Garden
+          <span class="preset-sub">Tomato+basil back · peppers+onion middle · cucumbers+dill · kale border</span>
+        </button>
+        <button class="preset-btn" onclick="applyPreset('threesisters')">
+          Three Sisters
+          <span class="preset-sub">Corn · beans · squash — traditional companion planting</span>
+        </button>
+        <button class="preset-btn" onclick="applyPreset('salad')">
+          Salad Garden
+          <span class="preset-sub">Lettuce · carrots · radish · garlic · herbs up front</span>
+        </button>
+        <button class="preset-btn" onclick="applyPreset('pollinator')">
+          Pollinator's Corner
+          <span class="preset-sub">Sunflowers · marigolds · dill · beans · zucchini</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Saves -->
+    <div class="card">
+      <div class="card-title">💾 Saved Layouts</div>
+      <div class="saves-body" id="saves-body"></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="card">
+      <div class="card-title">📊 Plant Count</div>
+      <div class="stats-list" id="stats-list"></div>
+      <div class="stat-total" id="stat-total">Total: 0 plants</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-bg">
+  <div class="modal-box">
+    <h3 id="modal-title">Confirm</h3>
+    <p id="modal-msg"></p>
+    <div class="modal-btns">
+      <button class="mbtn cancel" id="modal-cancel">Cancel</button>
+      <button class="mbtn ok" id="modal-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Default plant list — all editable
+let PLANTS = [
+  {id:'BN',name:'Pole Beans',  bg:'#4a7c3f',fg:'#fff'},
+  {id:'CN',name:'Corn',        bg:'#c8a000',fg:'#fff'},
+  {id:'TM',name:'Tomatoes',    bg:'#c0392b',fg:'#fff'},
+  {id:'PP',name:'Peppers',     bg:'#e07020',fg:'#fff'},
+  {id:'CU',name:'Cucumbers',   bg:'#5a9e3c',fg:'#fff'},
+  {id:'ZU',name:'Zucchini',    bg:'#7c5cbf',fg:'#fff'},
+  {id:'OK',name:'Okra',        bg:'#3a8ab0',fg:'#fff'},
+  {id:'WM',name:'Watermelon',  bg:'#c85070',fg:'#fff'},
+  {id:'MG',name:'Marigold',    bg:'#e09010',fg:'#fff'},
+  {id:'BA',name:'Basil',       bg:'#2d7048',fg:'#fff'},
+  {id:'DL',name:'Dill',        bg:'#6a8c40',fg:'#fff'},
+  {id:'SQ',name:'Squash',      bg:'#b06820',fg:'#fff'},
+  {id:'KL',name:'Kale',        bg:'#3a6b28',fg:'#fff'},
+  {id:'LT',name:'Lettuce',     bg:'#78b840',fg:'#fff'},
+  {id:'SF',name:'Sunflower',   bg:'#b89000',fg:'#fff'},
+  {id:'ON',name:'Onion',       bg:'#9c5fa0',fg:'#fff'},
+  {id:'GR',name:'Garlic',      bg:'#8a7a60',fg:'#fff'},
+  {id:'CR',name:'Carrots',     bg:'#d06020',fg:'#fff'},
+  {id:'RD',name:'Radish',      bg:'#b03060',fg:'#fff'},
+];
+
+let PM = {};
+function rebuildPM(){ PM={}; PLANTS.forEach(p=>PM[p.id]=p); }
+rebuildPM();
+
+let COLS=16, ROWS=14;
+let grid = {};
+let sel = null;
+let painting = false;
+let dragging = null;
+let saves = {1:null,2:null,3:null};
+let editingId = null; // null = add mode, string = edit mode
+
+function cellKey(r,c){ return `${r},${c}`; }
+function getCell(r,c){ return grid[cellKey(r,c)]||null; }
+function setCell(r,c,v){ const k=cellKey(r,c); if(v===null) delete grid[k]; else grid[k]=v; }
+
+// ── PRESETS ──────────────────────────────────────────────────────────
+// Each preset is designed around real companion planting logic.
+// North = high row numbers (tall plants go there to avoid shading shorter ones)
+
+function cottagePreset(){
+  // 16 cols × 14 rows
+  // Row 14 (north): Pole Beans — tall, catch morning/afternoon sun from north
+  // Rows 12-13: Tomatoes with Basil interplanted
+  // Rows 10-11: Peppers with Onions interplanted
+  // Rows 8-9:  Cucumbers with Dill interplanted (dill every 3rd col)
+  // Row 7:     Marigolds as pest-deterrent strip
+  // Rows 5-6:  Kale — cool, shade-tolerant, marigold border helps
+  // Rows 3-4:  Carrots and Garlic (garlic repels carrot fly)
+  // Rows 1-2:  Lettuce front row — low, likes a bit of shade from taller rows
+  const g={};
+  const pl=(r,c,id)=>{ if(r>=1&&r<=ROWS&&c>=1&&c<=COLS) g[cellKey(r,c)]=id; };
+  for(let c=1;c<=COLS;c++) pl(14,c,'BN');
+  for(let c=1;c<=COLS;c++){
+    pl(13,c, c%3===0?'BA':'TM');
+    pl(12,c, c%3===0?'BA':'TM');
+  }
+  for(let c=1;c<=COLS;c++){
+    pl(11,c, c%4===0?'ON':'PP');
+    pl(10,c, c%4===0?'ON':'PP');
+  }
+  for(let c=1;c<=COLS;c++){
+    pl(9,c, c%3===0?'DL':'CU');
+    pl(8,c, c%3===0?'DL':'CU');
+  }
+  for(let c=1;c<=COLS;c++) pl(7,c,'MG');
+  for(let c=1;c<=COLS;c++){pl(6,c,'KL');pl(5,c,'KL');}
+  for(let c=1;c<=COLS;c++){
+    pl(4,c, c%3===0?'GR':'CR');
+    pl(3,c, c%3===0?'GR':'CR');
+  }
+  for(let c=1;c<=COLS;c++){pl(2,c,'LT');pl(1,c,'LT');}
+  return g;
+}
+
+function threeSistersPreset(){
+  // Classic Iroquois trio: Corn (tall center), Beans (climb corn), Squash (ground cover)
+  // North rows: Sunflowers as windbreak
+  // Arranged in repeating 4-wide pods with a squash ring
+  const g={};
+  const pl=(r,c,id)=>{ if(r>=1&&r<=ROWS&&c>=1&&c<=COLS) g[cellKey(r,c)]=id; };
+  for(let c=1;c<=COLS;c++) pl(14,c,'SF');
+  // Three sisters pods: each pod is 4 cols wide, rows 2-13
+  for(let podC=0; podC<Math.floor(COLS/4); podC++){
+    const bc=podC*4+1;
+    for(let r=2;r<=13;r++){
+      for(let c=bc;c<=bc+3&&c<=COLS;c++){
+        const edge=(c===bc||c===bc+3||r===2||r===13);
+        if(edge) pl(r,c,'SQ');        // squash ring (ground cover edges)
+        else if(r>=5&&r<=10&&(c===bc+1||c===bc+2)) pl(r,c,'CN'); // corn center
+        else pl(r,c,'BN');             // beans climb the corn
+      }
+    }
+  }
+  // Marigolds at south border for pest control
+  for(let c=1;c<=COLS;c++) pl(1,c,'MG');
+  return g;
+}
+
+function saladPreset(){
+  // Low-growing salad garden — no tall plants
+  // Rows 13-14: Garlic (north, keeps pests away from whole garden)
+  // Rows 11-12: Kale (stays back, slightly taller)
+  // Rows 9-10:  Carrots + Radish interplanted (radish loosens soil for carrots)
+  // Rows 7-8:   Onions + Garlic strips
+  // Row 6:      Marigold border
+  // Rows 4-5:   Lettuce (cool front rows, some shade from kale)
+  // Rows 2-3:   Basil + Dill herbs (front, easy harvest)
+  // Row 1:      Radish (fast crop, front edge)
+  const g={};
+  const pl=(r,c,id)=>{ if(r>=1&&r<=ROWS&&c>=1&&c<=COLS) g[cellKey(r,c)]=id; };
+  for(let c=1;c<=COLS;c++){pl(14,c,'GR');pl(13,c,'GR');}
+  for(let c=1;c<=COLS;c++){pl(12,c,'KL');pl(11,c,'KL');}
+  for(let c=1;c<=COLS;c++){
+    pl(10,c, c%3===0?'RD':'CR');
+    pl(9,c,  c%3===0?'RD':'CR');
+  }
+  for(let c=1;c<=COLS;c++){
+    pl(8,c, c%2===0?'GR':'ON');
+    pl(7,c, c%2===0?'GR':'ON');
+  }
+  for(let c=1;c<=COLS;c++) pl(6,c,'MG');
+  for(let c=1;c<=COLS;c++){pl(5,c,'LT');pl(4,c,'LT');}
+  for(let c=1;c<=COLS;c++){
+    pl(3,c, c%3===0?'DL':'BA');
+    pl(2,c, c%3===0?'DL':'BA');
+  }
+  for(let c=1;c<=COLS;c++) pl(1,c,'RD');
+  return g;
+}
+
+function pollinatorPreset(){
+  // Designed to attract bees and butterflies
+  // North: Sunflowers (tall, big pollen source)
+  // Rows 11-13: Pole Beans climbing with Dill interspersed
+  // Rows 8-10: Zucchini (big flowers, great for bees) + Squash
+  // Row 7: Marigolds strip
+  // Rows 5-6: Peppers + Basil (aromatic, attract pollinators)
+  // Rows 3-4: Cucumbers + Dill
+  // Rows 1-2: Marigold + Kale border
+  const g={};
+  const pl=(r,c,id)=>{ if(r>=1&&r<=ROWS&&c>=1&&c<=COLS) g[cellKey(r,c)]=id; };
+  for(let c=1;c<=COLS;c++) pl(14,c,'SF');
+  for(let c=1;c<=COLS;c++){
+    pl(13,c, c%4===0?'DL':'BN');
+    pl(12,c, c%4===0?'DL':'BN');
+    pl(11,c, c%4===0?'DL':'BN');
+  }
+  for(let c=1;c<=COLS;c++){
+    pl(10,c, c%2===0?'SQ':'ZU');
+    pl(9,c,  c%2===0?'SQ':'ZU');
+    pl(8,c,  c%2===0?'SQ':'ZU');
+  }
+  for(let c=1;c<=COLS;c++) pl(7,c,'MG');
+  for(let c=1;c<=COLS;c++){
+    pl(6,c, c%3===0?'BA':'PP');
+    pl(5,c, c%3===0?'BA':'PP');
+  }
+  for(let c=1;c<=COLS;c++){
+    pl(4,c, c%3===0?'DL':'CU');
+    pl(3,c, c%3===0?'DL':'CU');
+  }
+  for(let c=1;c<=COLS;c++){
+    pl(2,c, c%2===0?'KL':'MG');
+    pl(1,c, c%2===0?'KL':'MG');
+  }
+  return g;
+}
+
+function applyPreset(name){
+  const labels={cottage:'Cottage Garden',threesisters:'Three Sisters',salad:'Salad Garden',pollinator:"Pollinator's Corner"};
+  modal('Load Preset',`Load "${labels[name]}"? Your current layout will be replaced.`,()=>{
+    const fns={cottage:cottagePreset,threesisters:threeSistersPreset,salad:saladPreset,pollinator:pollinatorPreset};
+    grid=fns[name]();
+    renderGrid();updateStats();toast(`"${labels[name]}" loaded`);
+  });
+}
+
+// ── GRID RENDER ───────────────────────────────────────────────────────
+function renderGrid(){
+  const wrap=document.getElementById('grid-wrap'); wrap.innerHTML='';
+  const axrow=document.createElement('div'); axrow.className='grid-row';
+  const cnr=document.createElement('div'); cnr.className='axis-lbl corner-ax'; axrow.appendChild(cnr);
+  for(let c=1;c<=COLS;c++){const a=document.createElement('div');a.className='axis-lbl col-ax';a.textContent=c;axrow.appendChild(a);}
+  wrap.appendChild(axrow);
+  for(let r=ROWS;r>=1;r--){
+    const row=document.createElement('div'); row.className='grid-row';
+    const ra=document.createElement('div'); ra.className='axis-lbl row-ax'; ra.textContent=r; row.appendChild(ra);
+    for(let c=1;c<=COLS;c++) row.appendChild(makeCell(r,c));
+    wrap.appendChild(row);
+  }
+  document.getElementById('col-v').textContent=COLS;
+  document.getElementById('row-v').textContent=ROWS;
+  document.getElementById('sqft-lbl').textContent=`${COLS*ROWS} sq ft`;
+}
+
+function styleCell(el,r,c){
+  el.className='cell'; el.style.cssText=''; el.textContent='';
+  const pid=getCell(r,c);
+  if(pid&&PM[pid]){
+    const p=PM[pid]; el.style.background=p.bg; el.style.color=p.fg;
+    el.textContent=p.id; el.title=p.name;
+  } else {
+    el.classList.add('empty'); el.title=`Empty (${r},${c})`;
+  }
+}
+
+function makeCell(r,c){
+  const el=document.createElement('div'); el.dataset.r=r; el.dataset.c=c;
+  styleCell(el,r,c);
+  el.addEventListener('mousedown',e=>{if(e.button!==2){e.preventDefault();painting=true;paint(r,c);}});
+  el.addEventListener('mouseenter',()=>{if(painting)paint(r,c);});
+  el.addEventListener('contextmenu',e=>{e.preventDefault();erase(r,c);});
+  el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag-over');});
+  el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
+  el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drag-over');if(dragging)paint(r,c);});
+  return el;
+}
+
+function getCellEl(r,c){ return document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`); }
+function paint(r,c){ if(!sel)return; setCell(r,c,sel==='ERASE'?null:sel); const el=getCellEl(r,c);if(el)styleCell(el,r,c); updateStats(); }
+function erase(r,c){ setCell(r,c,null); const el=getCellEl(r,c);if(el)styleCell(el,r,c); updateStats(); }
+document.addEventListener('mouseup',()=>painting=false);
+
+// ── PALETTE ───────────────────────────────────────────────────────────
+function buildPalette(){
+  const list=document.getElementById('palette-list'); list.innerHTML='';
+  PLANTS.forEach(p=>{
+    const el=document.createElement('div');
+    el.className='p-item'; el.dataset.pid=p.id; el.draggable=true;
+    el.innerHTML=`
+      <div class="p-swatch" style="background:${p.bg};color:${p.fg}">${p.id}</div>
+      <span class="p-name">${p.name}</span>
+      <span class="p-count" id="cnt-${p.id}"></span>
+      <span class="p-actions">
+        <button class="p-ico-btn" data-edit="${p.id}" title="Edit">✎</button>
+        <button class="p-ico-btn del" data-del="${p.id}" title="Remove">✕</button>
+      </span>`;
+    el.addEventListener('click',e=>{
+      if(e.target.closest('[data-edit],[data-del]'))return;
+      selectPlant(p.id,el);
+    });
+    el.addEventListener('dragstart',()=>{dragging=p.id;selectPlant(p.id,el);});
+    el.addEventListener('dragend',()=>dragging=null);
+    list.appendChild(el);
+  });
+
+  list.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.addEventListener('click',e=>{e.stopPropagation(); openEditMode(btn.dataset.edit);});
+  });
+  list.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const id=btn.dataset.del; const p=PM[id];
+      modal('Remove Plant',`Remove "${p.name}" from the palette? All placed cells will be cleared.`,()=>{
+        for(const k in grid) if(grid[k]===id) delete grid[k];
+        PLANTS=PLANTS.filter(x=>x.id!==id); rebuildPM();
+        if(sel===id){sel=null;document.getElementById('sel-name').textContent='None';}
+        buildPalette(); renderGrid(); updateStats(); toast(`${p.name} removed`);
+      });
+    });
+  });
+
+  document.getElementById('eraser-item').onclick=function(){selectPlant('ERASE',this);};
+}
+
+function selectPlant(id,el){
+  sel=id; dragging=id==='ERASE'?null:id;
+  document.querySelectorAll('.p-item,.eraser-item').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('sel-name').textContent=id==='ERASE'?'Eraser':(PM[id]?.name||id);
+}
+
+// ── ADD / EDIT PLANT FORM ─────────────────────────────────────────────
+function luminance(hex){
+  const r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
+  return 0.299*r+0.587*g+0.114*b;
+}
+function contrastFg(hex){ return luminance(hex)>0.55?'#1a1a1a':'#ffffff'; }
+
+function openAddMode(){
+  editingId=null;
+  document.getElementById('form-title').textContent='＋ Add Custom Plant';
+  document.getElementById('form-ok-btn').textContent='Add';
+  document.getElementById('fi-name').value='';
+  document.getElementById('fi-abbr').value='';
+  document.getElementById('fi-color').value='#2e7d32';
+  document.getElementById('edit-id').value='';
+  document.getElementById('form-cancel-btn').style.display='none';
+}
+
+function openEditMode(id){
+  const p=PM[id]; if(!p)return;
+  editingId=id;
+  document.getElementById('form-title').textContent=`✎ Edit: ${p.name}`;
+  document.getElementById('form-ok-btn').textContent='Save';
+  document.getElementById('fi-name').value=p.name;
+  document.getElementById('fi-abbr').value=p.id;
+  document.getElementById('fi-color').value=p.bg;
+  document.getElementById('edit-id').value=id;
+  document.getElementById('form-cancel-btn').style.display='';
+  document.getElementById('fi-name').focus();
+  document.getElementById('plant-form-card').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function makeUniqueId(abbr, excludeId){
+  const base=abbr.toUpperCase().slice(0,3);
+  if(!PM[base]||base===excludeId) return base;
+  for(let i=0;i<99;i++){const c=base[0]+i;if(!PM[c]||c===excludeId)return c;}
+  return base+Date.now();
+}
+
+document.getElementById('form-ok-btn').addEventListener('click',()=>{
+  const name=document.getElementById('fi-name').value.trim();
+  const abbrRaw=document.getElementById('fi-abbr').value.trim();
+  const color=document.getElementById('fi-color').value;
+  if(!name){toast('Enter a plant name');return;}
+  if(!abbrRaw){toast('Enter an abbreviation');return;}
+
+  const fg=contrastFg(color);
+
+  if(editingId){
+    // EDIT existing
+    const oldId=editingId;
+    const newId=makeUniqueId(abbrRaw, oldId);
+    const p=PM[oldId];
+    p.name=name; p.bg=color; p.fg=fg;
+    if(newId!==oldId){
+      // remap all grid cells
+      for(const k in grid) if(grid[k]===oldId) grid[k]=newId;
+      p.id=newId;
+      rebuildPM();
+    }
+    if(sel===oldId){sel=newId;document.getElementById('sel-name').textContent=name;}
+    buildPalette(); renderGrid(); updateStats(); openAddMode();
+    toast(`${name} updated`);
+  } else {
+    // ADD new
+    const id=makeUniqueId(abbrRaw, null);
+    PLANTS.push({id,name,bg:color,fg});
+    rebuildPM();
+    buildPalette(); updateStats();
+    document.getElementById('fi-name').value='';
+    document.getElementById('fi-abbr').value='';
+    toast(`"${name}" added`);
+    const el=document.querySelector(`.p-item[data-pid="${id}"]`);
+    if(el) selectPlant(id,el);
+  }
+});
+
+document.getElementById('form-cancel-btn').addEventListener('click',()=>{ openAddMode(); });
+
+// ── STATS ─────────────────────────────────────────────────────────────
+function updateStats(){
+  const counts={}; PLANTS.forEach(p=>counts[p.id]=0);
+  for(const k in grid){ const v=grid[k]; if(v&&counts[v]!==undefined) counts[v]++; }
+  PLANTS.forEach(p=>{ const el=document.getElementById('cnt-'+p.id); if(el) el.textContent=counts[p.id]||''; });
+  const list=document.getElementById('stats-list'); list.innerHTML='';
+  let total=0;
+  PLANTS.forEach(p=>{
+    if(!counts[p.id])return; total+=counts[p.id];
+    const row=document.createElement('div'); row.className='stat-row';
+    row.innerHTML=`<div class="stat-dot" style="background:${p.bg}"></div><span class="stat-name">${p.name}</span><span class="stat-n">${counts[p.id]}</span>`;
+    list.appendChild(row);
+  });
+  if(!list.children.length) list.innerHTML='<div style="font-size:11px;color:var(--ink-m);padding:4px 2px">No plants placed yet</div>';
+  document.getElementById('stat-total').textContent=`Total: ${total} plants`;
+}
+
+// ── SIZE CONTROLS ─────────────────────────────────────────────────────
+function trimGrid(){ for(const k in grid){ const[r,c]=k.split(',').map(Number); if(r>ROWS||c>COLS) delete grid[k]; } }
+document.getElementById('col-m').onclick=()=>{if(COLS>4){COLS--;trimGrid();renderGrid();updateStats();}};
+document.getElementById('col-p').onclick=()=>{if(COLS<40){COLS++;renderGrid();updateStats();}};
+document.getElementById('row-m').onclick=()=>{if(ROWS>4){ROWS--;trimGrid();renderGrid();updateStats();}};
+document.getElementById('row-p').onclick=()=>{if(ROWS<40){ROWS++;renderGrid();updateStats();}};
+
+// ── SAVES ─────────────────────────────────────────────────────────────
+function deepCopy(g){ const o={}; for(const k in g) o[k]=g[k]; return o; }
+function buildSaves(){
+  const body=document.getElementById('saves-body'); body.innerHTML='';
+  for(let i=1;i<=3;i++){
+    const filled=saves[i]!==null;
+    const row=document.createElement('div'); row.className='save-row';
+    row.innerHTML=`<div class="save-dot ${filled?'on':''}"></div>
+      <span class="save-lbl">Layout ${i}</span>
+      <button class="sv-btn s" onclick="saveSlot(${i})">Save</button>
+      <button class="sv-btn l" ${!filled?'disabled':''} onclick="loadSlot(${i})">Load</button>`;
+    body.appendChild(row);
+  }
+}
+function saveSlot(i){ saves[i]={grid:deepCopy(grid),cols:COLS,rows:ROWS,plants:JSON.parse(JSON.stringify(PLANTS))}; toast(`Layout ${i} saved`); buildSaves(); }
+function loadSlot(i){
+  if(!saves[i])return;
+  PLANTS=JSON.parse(JSON.stringify(saves[i].plants)); rebuildPM();
+  grid=deepCopy(saves[i].grid); COLS=saves[i].cols; ROWS=saves[i].rows;
+  buildPalette(); renderGrid(); updateStats(); toast(`Layout ${i} loaded`);
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────
+function modal(title,msg,onOk){
+  document.getElementById('modal-title').textContent=title;
+  document.getElementById('modal-msg').textContent=msg;
+  document.getElementById('modal-bg').classList.add('open');
+  document.getElementById('modal-cancel').onclick=()=>document.getElementById('modal-bg').classList.remove('open');
+  document.getElementById('modal-ok').onclick=()=>{document.getElementById('modal-bg').classList.remove('open');onOk();};
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────
+let toastT;
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2200); }
+
+// ── TOOLBAR ───────────────────────────────────────────────────────────
+document.getElementById('btn-reset').onclick=()=>modal('Reset Garden','Reset to the Cottage Garden preset? Current layout will be lost.',()=>{ grid=cottagePreset(); renderGrid(); updateStats(); toast('Reset to Cottage Garden'); });
+document.getElementById('btn-clear').onclick=()=>modal('Clear All Plants','Remove every plant from the grid?',()=>{ grid={}; renderGrid(); updateStats(); toast('Grid cleared'); });
+
+// ── INIT ──────────────────────────────────────────────────────────────
+buildPalette();
+openAddMode();
+grid=cottagePreset();
+renderGrid();
+buildSaves();
+updateStats();
+</script>
+</body>
+</html>
