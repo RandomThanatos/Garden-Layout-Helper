@@ -1,5 +1,7 @@
 🌱 Garden Layout Helper
 
+https://randomthanatos.github.io/Garden-Layout-Helper/
+
 Stop guessing where things go. Plan your garden before you ever touch a shovel.
 
 What It Does
